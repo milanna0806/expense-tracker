@@ -1,0 +1,25 @@
+:root {
+  --primary: #4f46e5;
+  --bg: #f4f5fb;
+  --surface: #ffffff;
+  --surface-alt: #eef0f8;
+  --border: #e3e6f0;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --income: #16a34a;
+  --expense: #dc2626;
+}
+
+:root[data-theme='dark'] {
+  --primary: #818cf8;
+  --bg: #0f1220;
+  --surface: #1a1d2e;
+  --surface-alt: #232740;
+  --border: #2d3250;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --income: #4ade80;
+  --expense: #f87171;
+}
+
+body { transition: background 0.2s, color 0.2s; }

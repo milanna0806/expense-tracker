@@ -1,10 +1,12 @@
-$primary-color: #4f46e5;
-$bg-color: #f4f5fb;
-$card-bg: #ffffff;
-$text-color: #1f2937;
-$muted-color: #6b7280;
-$income-color: #16a34a;
-$expense-color: #dc2626;
+$primary-color: var(--primary);
+$bg-color: var(--bg);
+$card-bg: var(--surface);
+$surface-alt: var(--surface-alt);
+$border-color: var(--border);
+$text-color: var(--text);
+$muted-color: var(--muted);
+$income-color: var(--income);
+$expense-color: var(--expense);
 
 $font-family: 'Segoe UI', Roboto, Arial, sans-serif;
 $radius: 12px;

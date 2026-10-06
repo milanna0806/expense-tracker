@@ -9,6 +9,16 @@
 
   &__logo { font-size: 1.25rem; font-weight: 700; color: v.$primary-color; }
   &__greeting { margin-left: auto; color: v.$muted-color; }
+  @include m.respond-to(mobile) { flex-wrap: wrap; &__greeting { display: none; } }
+
+  &__theme {
+    padding: v.$space-sm v.$space-md;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+  }
 
   &__btn {
     padding: v.$space-sm v.$space-md;

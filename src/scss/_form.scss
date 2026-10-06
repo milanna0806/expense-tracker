@@ -11,8 +11,10 @@
   &__field {
     flex: 1 1 140px;
     padding: v.$space-sm v.$space-md;
-    border: 1px solid #d1d5db;
+    border: 1px solid v.$border-color;
     border-radius: v.$radius;
+    background: v.$card-bg;
+    color: v.$text-color;
     font: inherit;
   }
 

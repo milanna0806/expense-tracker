@@ -4,15 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Expense Tracker</title>
+  <script>try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="page">
   <header class="header">
     <div class="header__logo">💸 Expense Tracker</div>
     <span class="header__greeting" id="greeting"></span>
+    <button class="header__theme" id="theme-btn" type="button" aria-label="Сменить тему">🌙</button>
     <button class="header__btn" id="auth-btn" type="button">Войти через Google</button>
   </header>
 
+  <section class="welcome" id="welcome">
+    <h1 class="welcome__title">Контролируйте свои финансы</h1>
+    <p class="welcome__text">Записывайте доходы и расходы, следите за балансом и тратами по категориям — всё в одном месте.</p>
+    <button class="welcome__btn" id="welcome-btn" type="button">Войти через Google</button>
+    <ul class="welcome__features">
+      <li class="welcome__feature"><span class="welcome__icon">📊</span>Баланс, доходы и расходы на одном экране</li>
+      <li class="welcome__feature"><span class="welcome__icon">🏷️</span>Категории: продукты, транспорт, развлечения, коммуналка</li>
+      <li class="welcome__feature"><span class="welcome__icon">☁️</span>Данные хранятся в облаке и доступны с любого устройства</li>
+    </ul>
+  </section>
+
+  <div class="app" id="app" hidden>
   <main class="page__content">
     <section class="summary">
       <article class="summary-card summary-card--balance">
@@ -29,7 +43,7 @@
       </article>
     </section>
 
-    <form class="form" id="tx-form" hidden>
+    <form class="form" id="tx-form">
       <input class="form__field" name="title" placeholder="Название" required>
       <input class="form__field" name="amount" type="number" min="0.01" step="0.01" placeholder="Сумма" required>
       <select class="form__field" name="type">
@@ -53,6 +67,7 @@
       <p class="transactions__empty" id="tx-empty">Войдите, чтобы увидеть транзакции</p>
     </section>
   </main>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js"></script>

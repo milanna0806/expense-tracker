@@ -5,6 +5,8 @@
 @use 'form';
 @use 'transactions';
 @use 'categories';
+@use 'welcome';
+@use 'theme';
 
 *, *::before, *::after { box-sizing: border-box; }
 
