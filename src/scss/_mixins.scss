@@ -1,0 +1,22 @@
+@use 'sass:map';
+
+$breakpoints: (
+  mobile: 767px,
+  tablet: 1023px
+);
+
+@mixin respond-to($screen) {
+  @if map.has-key($breakpoints, $screen) {
+    @media (max-width: map.get($breakpoints, $screen)) { @content; }
+  } @else {
+    @error "Неизвестный экран `#{$screen}`. Доступно: #{map.keys($breakpoints)}";
+  }
+}
+
+@mixin flex($direction: row, $justify: flex-start, $align: stretch, $gap: 0) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+  gap: $gap;
+}
