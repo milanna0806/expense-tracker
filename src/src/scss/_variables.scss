@@ -1,0 +1,23 @@
+$primary-color: var(--primary);
+$bg-color: var(--bg);
+$card-bg: var(--surface);
+$surface-alt: var(--surface-alt);
+$border-color: var(--border);
+$text-color: var(--text);
+$muted-color: var(--muted);
+$income-color: var(--income);
+$expense-color: var(--expense);
+
+$font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+$radius: 12px;
+$gap: 16px;
+$space-sm: 8px;
+$space-md: 16px;
+$space-lg: 24px;
+
+$categories: (
+  food: #4ec9b0,
+  transport: #007acc,
+  entertainment: #ce9178,
+  bills: #f44747
+);
