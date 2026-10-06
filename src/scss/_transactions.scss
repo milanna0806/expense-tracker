@@ -1,3 +1,4 @@
+@use 'mixins' as m;
 @use 'variables' as v;
 
 .transactions {
@@ -41,3 +42,21 @@
   font-size: 0.8rem;
 }
 
+// Адаптив: на мобильных строка таблицы превращается в вертикальную карточку
+@include m.respond-to(tablet) {
+  .summary { grid-template-columns: 1fr; }
+}
+
+@include m.respond-to(mobile) {
+  .transactions__head { display: none; }
+
+  .transactions__list .transaction-item {
+    @include m.flex(column, flex-start, flex-start, v.$space-sm);
+    margin: v.$space-sm;
+    padding: v.$space-md;
+    border: 1px solid #eef0f5;
+    border-radius: v.$radius;
+  }
+
+  .transaction-item__amount { text-align: left; font-size: 1.1rem; }
+}

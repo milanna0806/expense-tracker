@@ -4,6 +4,7 @@
 @use 'summary';
 @use 'form';
 @use 'transactions';
+@use 'categories';
 
 *, *::before, *::after { box-sizing: border-box; }
 
