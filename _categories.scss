@@ -1,0 +1,17 @@
+@use 'sass:color';
+@use 'variables' as v;
+
+@each $name, $c in v.$categories {
+  .category--#{$name} {
+    background-color: color.change($c, $alpha: 0.15);
+    color: $c;
+    border-left: 4px solid $c;
+  }
+}
+
+// CSS-переменные цветов категорий (используются в диаграмме)
+:root {
+  @each $name, $c in v.$categories {
+    --cat-#{$name}: #{$c};
+  }
+}

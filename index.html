@@ -12,13 +12,40 @@
     <div class="header__logo">💸 Expense Tracker</div>
     <span class="header__greeting" id="greeting"></span>
     <button class="header__theme" id="theme-btn" type="button" aria-label="Сменить тему">🌙</button>
-    <button class="header__btn" id="auth-btn" type="button">Войти через Google</button>
+    <button class="header__btn" id="auth-btn" type="button">Войти</button>
   </header>
 
   <section class="welcome" id="welcome">
     <h1 class="welcome__title">Контролируйте свои финансы</h1>
     <p class="welcome__text">Записывайте доходы и расходы, следите за балансом и тратами по категориям — всё в одном месте.</p>
-    <button class="welcome__btn" id="welcome-btn" type="button">Войти через Google</button>
+
+    <div class="auth" id="auth">
+      <div class="auth__tabs" id="auth-tabs" role="tablist">
+        <button class="auth__tab is-active" id="tab-login" data-mode="login" type="button" role="tab">Вход</button>
+        <button class="auth__tab" id="tab-signup" data-mode="signup" type="button" role="tab">Регистрация</button>
+      </div>
+
+      <form class="auth__form" id="auth-form" novalidate>
+        <h2 class="auth__title" id="auth-title">Вход</h2>
+        <p class="auth__hint" id="auth-hint" hidden></p>
+
+        <input class="auth__field" id="auth-email" name="email" type="email" autocomplete="email" placeholder="Email" required>
+        <input class="auth__field" id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="Пароль" required>
+        <input class="auth__field" id="auth-password2" name="password2" type="password" autocomplete="new-password" placeholder="Повторите пароль" hidden>
+
+        <label class="auth__show"><input type="checkbox" id="auth-show"> Показать пароль</label>
+
+        <p class="auth__msg" id="auth-msg" role="status" aria-live="polite" hidden></p>
+
+        <button class="auth__submit" id="auth-submit" type="submit">Войти</button>
+        <button class="auth__link" id="forgot-btn" type="button">Забыли пароль?</button>
+        <button class="auth__link" id="back-btn" type="button" hidden>← Назад ко входу</button>
+      </form>
+
+      <div class="auth__divider" id="auth-divider"><span>или</span></div>
+      <button class="auth__google" id="google-btn" type="button">Продолжить через Google</button>
+    </div>
+
     <ul class="welcome__features">
       <li class="welcome__feature"><span class="welcome__icon">📊</span>Баланс, доходы и расходы на одном экране</li>
       <li class="welcome__feature"><span class="welcome__icon">🏷️</span>Категории: продукты, транспорт, развлечения, коммуналка</li>
@@ -82,7 +109,7 @@
   </main>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

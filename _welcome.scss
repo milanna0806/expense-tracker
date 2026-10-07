@@ -1,0 +1,52 @@
+@use 'variables' as v;
+@use 'mixins' as m;
+
+.welcome {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 72px v.$space-md;
+  text-align: center;
+
+  &[hidden] { display: none; }
+
+  &__title { margin: 0 0 v.$space-md; font-size: 2.6rem; line-height: 1.15; }
+  &__text { margin: 0 auto v.$space-lg; max-width: 560px; font-size: 1.1rem; color: v.$muted-color; }
+
+  &__btn {
+    padding: 14px 32px;
+    border: 0;
+    border-radius: v.$radius;
+    background: v.$primary-color;
+    color: #fff;
+    font-size: 1.05rem;
+    cursor: pointer;
+    &:hover { opacity: 0.9; }
+  }
+
+  &__features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: v.$gap;
+    margin: 56px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__feature {
+    padding: v.$space-lg v.$space-md;
+    background: v.$card-bg;
+    border: 1px solid v.$border-color;
+    border-radius: v.$radius;
+    color: v.$muted-color;
+  }
+
+  &__icon { display: block; margin-bottom: v.$space-sm; font-size: 2rem; }
+
+  @include m.respond-to(tablet) {
+    padding-top: 40px;
+    &__title { font-size: 2rem; }
+    &__features { grid-template-columns: 1fr; margin-top: 32px; }
+  }
+}
+
+.app[hidden] { display: none; }
