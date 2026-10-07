@@ -7,6 +7,7 @@
 @use 'transactions';
 @use 'categories';
 @use 'welcome';
+@use 'auth';
 @use 'theme';
 
 *, *::before, *::after { box-sizing: border-box; }
