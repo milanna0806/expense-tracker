@@ -10,8 +10,17 @@ const fmt = (n) => Number(n).toLocaleString('ru-RU', { minimumFractionDigits: 2,
 let user = null;
 let channel = null;
 
-const login = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+// Сюда Supabase вернёт пользователя из писем (подтверждение email, сброс пароля) и из Google.
+// Этот адрес должен быть в Supabase → Authentication → URL Configuration → Redirect URLs.
+const REDIRECT_URL = window.location.origin + window.location.pathname;
+const MIN_PASSWORD = 8;
+
+const loginGoogle = () => sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: REDIRECT_URL } });
 const logout = () => sb.auth.signOut();
+
+let mode = 'login';        // login | signup | forgot | recovery
+let recovering = false;    // пользователь пришёл по ссылке из письма и ещё не задал новый пароль
+let cooldownTimer = null;
 
 function renderSummary(rows) {
   const sum = (t) => rows.filter((r) => r.type === t).reduce((s, r) => s + Number(r.amount), 0);
@@ -66,11 +75,13 @@ function subscribe() {
     .subscribe();
 }
 
-function applySession(session) {
+function applySession(rawSession) {
+  // Пока человек не задал новый пароль, приложение не показываем
+  const session = recovering ? null : rawSession;
   user = session?.user ?? null;
   const btn = $('auth-btn');
-  btn.textContent = user ? 'Выйти' : 'Войти через Google';
-  btn.onclick = user ? logout : login;
+  btn.textContent = user ? 'Выйти' : 'Войти';
+  btn.onclick = user ? logout : () => { if (mode === 'recovery') return; setMode('login'); $('auth-email').focus(); };
   $('greeting').textContent = user ? `Привет, ${user.user_metadata?.full_name || user.email}!` : '';
   $('welcome').hidden = !!user;
   $('app').hidden = !user;
@@ -88,6 +99,157 @@ function applySession(session) {
   }
 }
 
+// --- Форма входа / регистрации / восстановления пароля ---
+const MODES = {
+  login:    { title: 'Вход',               submit: 'Войти',              fields: ['email', 'password'],       tabs: true,  google: true },
+  signup:   { title: 'Регистрация',        submit: 'Создать аккаунт',    fields: ['email', 'password', 'password2'], tabs: true,  google: true },
+  forgot:   { title: 'Восстановление пароля', submit: 'Отправить ссылку', fields: ['email'],                  tabs: false, google: false,
+              hint: 'Укажите email, с которым регистрировались. Мы отправим ссылку для создания нового пароля.' },
+  recovery: { title: 'Новый пароль',       submit: 'Сохранить пароль',   fields: ['password', 'password2'],  tabs: false, google: false,
+              hint: `Придумайте новый пароль (минимум ${MIN_PASSWORD} символов).` }
+};
+
+function showMsg(text, kind = 'error') {
+  const el = $('auth-msg');
+  el.hidden = !text;
+  el.textContent = text || '';
+  el.className = 'auth__msg auth__msg--' + kind;
+}
+
+function setMode(next) {
+  mode = next;
+  const m = MODES[next];
+  $('auth-title').textContent = m.title;
+  $('auth-submit').textContent = m.submit;
+  $('auth-hint').hidden = !m.hint;
+  $('auth-hint').textContent = m.hint || '';
+  $('auth-email').hidden = !m.fields.includes('email');
+  $('auth-password').hidden = !m.fields.includes('password');
+  $('auth-password2').hidden = !m.fields.includes('password2');
+  $('auth-show').closest('label').hidden = !m.fields.includes('password');
+  $('auth-tabs').hidden = !m.tabs;
+  $('tab-login').classList.toggle('is-active', next === 'login');
+  $('tab-signup').classList.toggle('is-active', next === 'signup');
+  $('forgot-btn').hidden = next !== 'login';
+  $('back-btn').hidden = next !== 'forgot';
+  $('google-btn').hidden = !m.google;
+  $('auth-divider').hidden = !m.google;
+  $('auth-password').autocomplete = next === 'login' ? 'current-password' : 'new-password';
+  $('auth-password').value = '';
+  $('auth-password2').value = '';
+  showMsg('');
+}
+
+function authError(err) {
+  const code = err.code || '';
+  const msg = (err.message || '').toLowerCase();
+  if (code === 'invalid_credentials' || msg.includes('invalid login credentials')) return 'Неверный email или пароль. Если забыли пароль — нажмите «Забыли пароль?».';
+  if (code === 'email_not_confirmed' || msg.includes('not confirmed')) return 'Email ещё не подтверждён. Проверьте почту (и папку «Спам») и перейдите по ссылке из письма.';
+  if (code === 'user_already_exists' || msg.includes('already registered')) return 'Этот email уже зарегистрирован. Войдите или восстановите пароль.';
+  if (code === 'weak_password' || msg.includes('password should')) return `Пароль слишком простой. Минимум ${MIN_PASSWORD} символов.`;
+  if (code === 'same_password' || msg.includes('different from the old')) return 'Новый пароль должен отличаться от старого.';
+  if (err.status === 429 || code.includes('rate_limit') || msg.includes('rate limit') || msg.includes('too many')) return 'Слишком много попыток. Подождите минуту и повторите.';
+  if (code === 'otp_expired' || msg.includes('expired')) return 'Ссылка устарела или уже использована. Запросите новую.';
+  if (msg.includes('network') || msg.includes('failed to fetch')) return 'Нет соединения с сервером. Проверьте интернет.';
+  return 'Ошибка: ' + err.message;
+}
+
+// Защита от спама кнопкой «Отправить ссылку»
+function startCooldown(seconds = 60) {
+  const btn = $('auth-submit');
+  let left = seconds;
+  btn.disabled = true;
+  clearInterval(cooldownTimer);
+  const tick = () => {
+    if (mode !== 'forgot') { clearInterval(cooldownTimer); btn.disabled = false; return; }
+    if (left <= 0) { clearInterval(cooldownTimer); btn.disabled = false; btn.textContent = MODES.forgot.submit; return; }
+    btn.textContent = `Отправить ещё раз (${left})`;
+    left -= 1;
+  };
+  tick();
+  cooldownTimer = setInterval(tick, 1000);
+}
+
+$('auth-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('auth-email').value.trim();
+  const password = $('auth-password').value;
+  const password2 = $('auth-password2').value;
+  const needs = MODES[mode].fields;
+
+  if (needs.includes('email') && !/^\S+@\S+\.\S+$/.test(email)) return showMsg('Введите корректный email.');
+  if (mode === 'login' && !password) return showMsg('Введите пароль.');
+  if ((mode === 'signup' || mode === 'recovery') && password.length < MIN_PASSWORD) return showMsg(`Пароль должен быть не короче ${MIN_PASSWORD} символов.`);
+  if (needs.includes('password2') && password !== password2) return showMsg('Пароли не совпадают.');
+
+  const submit = $('auth-submit');
+  submit.disabled = true;
+  showMsg('');
+
+  try {
+    if (mode === 'login') {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // дальше сработает onAuthStateChange
+    } else if (mode === 'signup') {
+      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: REDIRECT_URL } });
+      if (error) throw error;
+      // Если email уже занят, Supabase (с включённым подтверждением) не выдаёт ошибку, но identities пустой
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw { code: 'user_already_exists', message: 'User already registered' };
+      }
+      if (!data.session) {
+        showMsg(`Мы отправили письмо на ${email}. Перейдите по ссылке в нём, чтобы подтвердить email, и затем войдите.`, 'ok');
+        $('auth-password').value = '';
+        $('auth-password2').value = '';
+      }
+    } else if (mode === 'forgot') {
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: REDIRECT_URL });
+      if (error) throw error;
+      // Ответ одинаковый независимо от того, есть ли такой email — не раскрываем, кто зарегистрирован
+      showMsg('Если аккаунт с таким email существует, мы отправили на него ссылку для сброса пароля. Проверьте почту и папку «Спам».', 'ok');
+      startCooldown();
+      return;
+    } else if (mode === 'recovery') {
+      const { error } = await sb.auth.updateUser({ password });
+      if (error) throw error;
+      recovering = false;
+      history.replaceState(null, '', REDIRECT_URL);
+      const { data } = await sb.auth.getSession();
+      setMode('login');
+      applySession(data.session);
+      return;
+    }
+  } catch (err) {
+    showMsg(authError(err));
+  }
+  submit.disabled = false;
+});
+
+document.querySelectorAll('.auth__tab').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+$('forgot-btn').addEventListener('click', () => {
+  const email = $('auth-email').value;
+  setMode('forgot');
+  $('auth-email').value = email;
+  $('auth-email').focus();
+});
+$('back-btn').addEventListener('click', () => { $('auth-submit').disabled = false; setMode('login'); });
+$('google-btn').addEventListener('click', loginGoogle);
+$('auth-show').addEventListener('change', (e) => {
+  const type = e.target.checked ? 'text' : 'password';
+  $('auth-password').type = type;
+  $('auth-password2').type = type;
+});
+
+// Ссылка из письма могла устареть — Supabase кладёт ошибку в #hash
+(function handleLinkError() {
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  if (!params.get('error')) return;
+  history.replaceState(null, '', REDIRECT_URL);
+  setMode('forgot');
+  showMsg(authError({ code: params.get('error_code') || '', message: params.get('error_description') || '' }) + ' Запросите новую ссылку ниже.');
+})();
+
 $('tx-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = new FormData(e.target);
@@ -103,7 +265,13 @@ $('tx-form').addEventListener('submit', async (e) => {
   loadTransactions();
 });
 
-sb.auth.onAuthStateChange((_event, session) => applySession(session));
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    recovering = true;
+    setMode('recovery');
+  }
+  applySession(session);
+});
 
 // --- Переключатель темы ---
 function setTheme(t) {
@@ -113,7 +281,6 @@ function setTheme(t) {
 }
 $('theme-btn').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 setTheme(document.documentElement.dataset.theme || 'light');
-$('welcome-btn').addEventListener('click', login);
 
 // --- Диаграмма расходов по категориям ---
 function renderStats(rows) {
